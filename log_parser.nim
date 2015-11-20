@@ -169,9 +169,11 @@ proc parse_visitor_info(parts:seq[string],
   result.network_id = data.getOrDefault("parsely_uuid")
   result.ip = parts[1]
   
-proc parse_log_line*(line:string): LogLine {. exportc, dynlib .}  =
-  #echo($line)
+proc parse_log_line*(line:string): string {. exportc, dynlib .}  =
+  echo($line)
+  var res:LogLine = LogLine()
   let parts: seq[string] = line.split(" || ")
+  echo($parts)
   if parts.len == 0:
     return
   let parsed: Table[string,string] = parse_query_args(parts[4].split(' ')[1])
@@ -179,24 +181,26 @@ proc parse_log_line*(line:string): LogLine {. exportc, dynlib .}  =
   
   echo($parsed)
 
-  result.display_info = parse_display(parsed)
-  result.session_info = parse_session(parts,parsed)
-  result.timestamp_info = parse_timestamp(parts,parsed,data)
-  result.visitor_info = parse_visitor_info(parts,parsed,data)
+  res.display_info = parse_display(parsed)
+  res.session_info = parse_session(parts,parsed)
+  res.timestamp_info = parse_timestamp(parts,parsed,data)
+  res.visitor_info = parse_visitor_info(parts,parsed,data)
 
-  result.apikey = parsed.getOrDefault("idsite")
-  result.url = parsed.getOrDefault("url")
-  result.referrer = parsed.getOrDefault("urlref")
-  result.action = parsed.getOrDefault("action")
+  res.apikey = parsed.getOrDefault("idsite")
+  res.url = parsed.getOrDefault("url")
+  res.referrer = parsed.getOrDefault("urlref")
+  res.action = parsed.getOrDefault("action")
 
   let et_inc = parsed.getOrDefault("inc")
   var inc = 0
   if et_inc.len != 0:
     inc = parseInt(et_inc)
 
-  result.engaged_time_inc = inc
-  result.extra_data = data
-  result.user_agent = parts[8]
+  res.engaged_time_inc = inc
+  res.extra_data = data
+  res.user_agent = parts[8]
+
+  result = $$res
   
 #var line: string = """/plogger/ || 50.73.113.242 || - || 21/Mar/2013:13:22:13 +0000  || GET /plogger/?rand=1363872131875&idsite=deadspin.com&url=http%3A%2F%2Fdeadspin.com%2Frecommended&urlref=http%3A%2F%2Fdeadspin.com%2F&screen=1024x768%7C1024x738%7C24&data=%7B%22parsely_uuid%22%3A%22908932BF-0935-46AD-84BD-10120D5297CA%22%2C%22parsely_site_uuid%22%3A%22908932BF-0935-46AD-84BD-10120D5297CA%22%7D&title=Deadspin+-+Sports+News+without+Access%2C+Favor%2C+or+Discretion&date=Thu+Mar+21+2013+08%3A22%3A11+GMT-0500+(Central+Daylight+Time)&action=pageview HTTP/1.1 || 200 || 363 || - || Mozilla/5.0 (Windows NT 5.1; rv:19.0) Gecko/20100101 Firefox/19.0" || - || - || parsely_network_uuid=CrMHN1FLCYUJWgTmkT47Ag==; expires=Thu, 31-Dec-37 23:55:55 GMT; domain=track.parse.ly; path=/ || 0.000"""  
 
@@ -211,6 +215,8 @@ proc str*(line:string): string {. exportc, dynlib .}  =
   echo("printing line")
   echo($line)
   echo($line.len)
+  let parts: seq[string] = line.split(";;")
+  echo($parts)
   result = "DONE!!"
   # var e = line.split(";;")
   # if e.len == 0:
