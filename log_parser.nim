@@ -5,7 +5,6 @@ import cgi
 import times
 import json
 import sets
-import re
 import marshal
 import times
 
@@ -171,9 +170,10 @@ proc parse_visitor_info(parts:seq[string],
   result.ip = parts[1]
   
 proc parse_log_line*(line:string): LogLine {. exportc, dynlib .}  =
-  echo($line)
+  #echo($line)
   let parts: seq[string] = line.split(" || ")
-  
+  if parts.len == 0:
+    return
   let parsed: Table[string,string] = parse_query_args(parts[4].split(' ')[1])
   let data = parse_data(parsed.getOrDefault("data"))
   
@@ -206,3 +206,13 @@ proc parse_log_line*(line:string): LogLine {. exportc, dynlib .}  =
 # # XXX TODO: timestamps are not correct
 # var log_line = parse_log_line(line)
 # echo($$log_line)
+
+proc str*(line:string): string {. exportc, dynlib .}  =
+  echo("printing line")
+  echo($line)
+  echo($line.len)
+  result = "DONE!!"
+  # var e = line.split(";;")
+  # if e.len == 0:
+  #   return ""
+  # return e[0]

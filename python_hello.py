@@ -8,24 +8,39 @@ from ctypes import *
 line = """"/plogger/ || 191.251.123.60 || - || 31/Aug/2015:23:49:01 +0000  || GET /plogger/?rand=1441064941650&idsite=bolsademulher.com&url=http%3A%2F%2Fwww.bolsademulher.com%2Fbebe%2Fo-que-o-bebe-sente-dentro-da-barriga-quando-a-mae-faz-sexo-4-sensacoes-surpreendentes%2F%3Futm_source%3Dfacebook%26utm_medium%3Dmanual%26utm_campaign%3DBolsaFB&urlref=http%3A%2F%2Fm.facebook.com%2F&screen=360x592%7C360x592%7C32&data=%7B%22parsely_uuid%22%3A%22b5e2fcb7-966f-40f8-b41c-fca446908a56%22%2C%22parsely_site_uuid%22%3A%226e9ab165-497c-45be-9998-e029372b5a92%22%7D&sid=1&surl=http%3A%2F%2Fwww.bolsademulher.com%2Fbebe%2Fo-que-o-bebe-sente-dentro-da-barriga-quando-a-mae-faz-sexo-4-sensacoes-surpreendentes%2F%3Futm_source%3Dfacebook%26utm_medium%3Dmanual%26utm_campaign%3DBolsaFB&sref=http%3A%2F%2Fm.facebook.com%2F&sts=1441064914096&slts=0&date=Mon+Aug+31+2015+20%3A49%3A01+GMT-0300+(BRT)&action=heartbeat&inc=6 HTTP/1.1 || 200 || 236 || http://www.bolsademulher.com/bebe/o-que-o-bebe-sente-dentro-da-barriga-quando-a-mae-faz-sexo-4-sensacoes-surpreendentes/?utm_source=facebook&utm_medium=manual&utm_campaign=BolsaFB || Mozilla/5.0 (Linux; Android 4.4.4; XT1025 Build/KXC21.5-40) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/33.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/34.0.0.43.267;] || - || - || - || 0.000"""
 
 
-class Logline224016(Structure):
-    pass
-
-
 class TGenericSeq (Structure):
     _fields_ = [("len", c_int), ("reserved", c_int)]
 
 
 class NimStringDesc(Structure):
-    _fields_ = [("Sup", TGenericSeq), ("data", c_char_p)]
-
-# print NimStringDesc.Sup
+    _fields_ = [("Sup", TGenericSeq), ("data", c_char * 8776)]
 
 
 def main():
     lib = CDLL("/home/dfdeshom/code/nim_log_perf/liblog_parser.so")
-    lib.argtypes = [POINTER(NimStringDesc), POINTER(Logline224016)]
-    lib.restype = Logline224016
-    print lib.parse_log_line(line,)
+    #lib.argtypes = [POINTER(NimStringDesc)]
+    #lib.restype = POINTER(NimStringDesc)
+    #e = cast(line, POINTER(NimStringDesc))
+    # lib.parse_log_line(e)
+
+    ###################################################
+    s = "2!!!!!!!@dsds;;e#ddsadasfd324,mlkailsdj mklnmk mdslkmd1"  # offset is 8
+    print "string len: ", len(s)
+    str_pointer = POINTER(NimStringDesc)
+    libstr = lib.str
+    libstr.argtypes = [str_pointer]
+    libstr.restype = str_pointer
+
+    tgs = TGenericSeq(len(s), 0)
+    ee = string_at(s)
+    nsd = NimStringDesc(tgs, ee)
+
+    e = str_pointer(nsd)
+    res = libstr(e)
+    # print res.contents
+    print "content:", res.contents.data[0], res.contents.Sup.len
+    # print dir(res.contents.data)
+    print res.contents.data
+    return
 
 main()
