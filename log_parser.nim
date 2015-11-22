@@ -45,7 +45,7 @@ type
     url: string
     referrer: string
     action: string
-    engaged_time_inc: int
+    engaged_time_inc: int64
     extra_data: Table[string,string]
     user_agent: string
     
