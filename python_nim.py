@@ -13,39 +13,31 @@ class TGenericSeq (Structure):
 
 
 class NimStringDesc(Structure):
-    _fields_ = [("Sup", TGenericSeq), ("data", c_char * (1309))]
+    pass
+
+
+def make_nim_string(s):
+    _len = len(s)
+    NimStringDesc._fields_ = [("Sup", TGenericSeq),
+                              ("data", c_char * _len)]
+    tgs = TGenericSeq(_len, 0)
+    nsd = NimStringDesc(tgs, s)
+    str_pointer = POINTER(NimStringDesc)
+    return str_pointer(nsd)
 
 
 def main():
     lib = CDLL("/home/dfdeshom/code/nim_log_perf/liblog_parser.so")
     str_pointer = POINTER(NimStringDesc)
 
-    # lib_parse = lib.parse_log_line
-    # lib_parse.argtypes = [str_pointer]
-    # lib_parse.restype = str_pointer
+    lib_parse = lib.parse_log_line
+    lib_parse.argtypes = [str_pointer]
+    lib_parse.restype = str_pointer
 
-    # tgs = TGenericSeq(len(line), 0)
-    # nsd = NimStringDesc(tgs, line)
-    # e = str_pointer(nsd)
-
-    # lib_parse(e)
-
-    ###################################################
-    s = "5" * 1000  # "2!!!!!!!@dsds;;e#ddsadasfd324,mlkailsdj mklnmk mdslkmd1"  # offset is 8
-    print "string len: ", len(s)
-
-    libstr = lib.str
-    libstr.argtypes = [str_pointer]
-    libstr.restype = str_pointer
-
-    tgs = TGenericSeq(len(s), 0)
-    nsd = NimStringDesc(tgs, s)
-    e = str_pointer(nsd)
-    res = libstr(e)
-    # print res.contents
-    print "content:", res.contents.data[0], res.contents.Sup.len
-    # print dir(res.contents.data)
-    print res.contents.data
+    # for i in range(100):
+    #    res = lib_parse(e)
+    e = make_nim_string(line)
+    print lib_parse(e)
     return
 
 main()
