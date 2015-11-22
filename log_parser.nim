@@ -8,6 +8,9 @@ import sets
 import marshal
 import times
 
+when not defined(boehmgc):
+  {.fatal: "Library must be compiled with --gc:boehm" .}
+  
 type
   DisplayInfo = object
     total_width: string
@@ -47,7 +50,7 @@ type
     user_agent: string
     
 proc parse_query_args(req:string): Table[string,string] =
-  let uri: URI2 = uri2.parseURI2(req)
+  let uri: URI2 = parseURI2(req)
   let queries : seq[seq[string]] = uri.getAllQueries()
   let ignore = ["h", "m", "s", "java", "qt", "ag", "fla",
                 "gears", "pdf", "realp", "wma", "dir"]
@@ -71,7 +74,7 @@ proc parse_data(json_string:string): Table[string,string] =
     for k,v in j.pairs():
       data.add(k,v.str)
   except:
-    echo("")
+    echo("Exception parsing json data")
   result = data
 
 proc parse_resolution(resolution:string): seq[string] =
@@ -102,7 +105,8 @@ proc parse_display(parsed:Table[string,string]): DisplayInfo =
   # pixel depth
   result.pixel_depth=resolutions[2]
     
-proc parse_session(parts:seq[string],parsed:Table[string,string]): SessionInfo =
+proc parse_session(parts:seq[string],
+                   parsed:Table[string,string]): SessionInfo =
   let sid = parsed.getOrDefault("sid")
   if not isDigit(sid):
     return
@@ -132,11 +136,11 @@ proc parse_timestamp(parts:seq[string],
                      data:Table[string,string]): TimestampInfo =
   const JAN_2000_UNIX_MS = 946702800000  # Jan 1, 2000 in milliseconds 
   var nginx_timeinfo = parse(parts[3].split(' ')[0],"%d/%b/%Y:%H:%M:%S")
-  var nginx_ms = toSeconds(timeInfoToTime(nginx_timeinfo))*1000
+  var nginx_ms:int64 = toInt(toSeconds(timeInfoToTime(nginx_timeinfo))*1000)
     
   let pixel = parsed.getOrDefault("rand")
-  var pixel_ms = 0
-  var override:BiggestInt = 0
+  var pixel_ms:int64 = 0
+  var override:int64 = 0
   
   if pixel.len>0:
     try:
@@ -146,7 +150,7 @@ proc parse_timestamp(parts:seq[string],
 
   # The ts override can be in seconds or milliseconds.
   var ts = 0
-  var ts_val = data.getOrDefault("ts")
+  let ts_val = data.getOrDefault("ts")
   if ts_val.len==0:
     ts = 0
   else:
@@ -156,7 +160,7 @@ proc parse_timestamp(parts:seq[string],
   else:
     override = ts
 
-  result.nginx_ms = toInt(nginx_ms)
+  result.nginx_ms = nginx_ms
   result.pixel_ms = pixel_ms
   result.override_ms = override
 
@@ -170,17 +174,15 @@ proc parse_visitor_info(parts:seq[string],
   result.ip = parts[1]
   
 proc parse_log_line*(line:string): string {. exportc, dynlib .}  =
-  echo($line)
   var res:LogLine = LogLine()
-  let parts: seq[string] = line.split(" || ")
-  echo($parts)
+  let parts = line.split(" || ")
+
   if parts.len == 0:
     return
-  let parsed: Table[string,string] = parse_query_args(parts[4].split(' ')[1])
+  
+  let parsed: Table[string,string] = parse_query_args(parts[4].split(" ")[1])
   let data = parse_data(parsed.getOrDefault("data"))
   
-  echo($parsed)
-
   res.display_info = parse_display(parsed)
   res.session_info = parse_session(parts,parsed)
   res.timestamp_info = parse_timestamp(parts,parsed,data)
@@ -192,11 +194,11 @@ proc parse_log_line*(line:string): string {. exportc, dynlib .}  =
   res.action = parsed.getOrDefault("action")
 
   let et_inc = parsed.getOrDefault("inc")
-  var inc = 0
+  var time_inc = 0
   if et_inc.len != 0:
-    inc = parseInt(et_inc)
+    time_inc = parseInt(et_inc)
 
-  res.engaged_time_inc = inc
+  res.engaged_time_inc = time_inc
   res.extra_data = data
   res.user_agent = parts[8]
 
@@ -211,14 +213,3 @@ proc parse_log_line*(line:string): string {. exportc, dynlib .}  =
 # var log_line = parse_log_line(line)
 # echo($$log_line)
 
-proc str*(line:string): string {. exportc, dynlib .}  =
-  echo("printing line")
-  echo($line)
-  echo($line.len)
-  let parts: seq[string] = line.split(";;")
-  echo($parts)
-  result = "DONE!!"
-  # var e = line.split(";;")
-  # if e.len == 0:
-  #   return ""
-  # return e[0]
